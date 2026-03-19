@@ -93,9 +93,15 @@ class Menu:
             elif event.type == pygame.MOUSEMOTION:
                 self.update_button_hover(mouse_pos)
             elif event.type == pygame.MOUSEBUTTONDOWN:
-                self.handle_click(mouse_pos)
+                if self.state == MenuState.GAME:
+                    self.game_instance.handle_events(event)
+                else:
+                    self.handle_click(mouse_pos)
             elif event.type == pygame.KEYDOWN:
-                self.handle_key_input(event)
+                if self.state == MenuState.GAME:
+                    self.game_instance.handle_events(event)
+                else:
+                    self.handle_key_input(event)
 
     def update_button_hover(self, pos):
         if self.state == MenuState.MAIN:

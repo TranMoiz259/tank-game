@@ -156,15 +156,32 @@ class Game:
             self.draw()
         
         pygame.quit()
+
+    def update(self):
+        """Update game state"""
+        if not self.game_started:
+            self.update_countdown()
+        else:
+            # Update player positions, bullets, collisions, etc.
+            pass
     
-    def handle_events(self):
-        """Handle user input"""
-        for event in pygame.event.get():
-            if event.type == pygame.QUIT:
+    def update_countdown(self):
+        """Update countdown"""
+        self.countdown_timer += 1
+        if self.countdown_timer >= 60:  # 1 second at 60 FPS
+            self.countdown_timer = 0
+            self.countdown -= 1
+            if self.countdown < 0:
+                self.game_started = True
+    
+    def handle_events(self, event):
+        """Handle user input during game"""
+        if event.type == pygame.KEYDOWN:
+            if event.key == pygame.K_ESCAPE:
                 self.running = False
-            elif event.type == pygame.KEYDOWN:
-                if event.key == pygame.K_ESCAPE:
-                    self.running = False
+        elif event.type == pygame.MOUSEBUTTONDOWN:
+            # Handle shooting, etc.
+            pass
     
     def draw(self):
         """Draw game screen"""
