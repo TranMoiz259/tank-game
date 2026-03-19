@@ -98,6 +98,20 @@ class Server:
                         response = {'status': 'success', 'rooms': rooms_list}
                         client_socket.send(json.dumps(response).encode())
                         
+                    elif action == 'start_game':
+                        room_code = message.get('room_code')
+                        if room_code in self.rooms:
+                            if self.rooms[room_code].start_game():
+                                response = {'status': 'success', 'message': 'Game started'}
+                                client_socket.send(json.dumps(response).encode())
+                                print(f"Game started in room {room_code}")
+                            else:
+                                response = {'status': 'error', 'message': 'Not enough players'}
+                                client_socket.send(json.dumps(response).encode())
+                        else:
+                            response = {'status': 'error', 'message': 'Room not found'}
+                            client_socket.send(json.dumps(response).encode())
+                        
                 except json.JSONDecodeError:
                     print(f"Invalid JSON from {client_address}")
                     
