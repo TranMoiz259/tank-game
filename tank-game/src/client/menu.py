@@ -108,8 +108,16 @@ class Menu:
                 self.input_text = self.player_name
                 self.input_active = True
         elif self.state == MenuState.WAITING:
-            if pygame.Rect(300, 480, 200, 50).collidepoint(pos):
+            if pygame.Rect(300, 450, 200, 50).collidepoint(pos):
                 self.start_game()
+            elif pygame.Rect(50, 520, 100, 40).collidepoint(pos):
+                self.state = MenuState.MAIN
+        elif self.state == MenuState.JOIN_ROOM:
+            if pygame.Rect(50, 520, 100, 40).collidepoint(pos):
+                self.state = MenuState.MAIN
+        elif self.state == MenuState.SETTINGS:
+            if pygame.Rect(50, 520, 100, 40).collidepoint(pos):
+                self.state = MenuState.MAIN
         elif self.state == MenuState.NETWORK_SETTINGS:
             self.save_network_field(self.current_input_field)
             
@@ -121,7 +129,7 @@ class Menu:
                 self.current_input_field = 1
                 self.input_text = str(self.server_port)
                 self.input_active = True
-            elif pygame.Rect(300, 400, 200, 50).collidepoint(pos):
+            elif pygame.Rect(300, 370, 200, 50).collidepoint(pos):
                 self.save_network_field(self.current_input_field)
                 self.confirm_network_settings()
 
@@ -144,19 +152,22 @@ class Menu:
 
     def draw_waiting(self):
         title = self.font_large.render("Waiting for Players", True, (255, 255, 255))
-        self.screen.blit(title, (self.width // 2 - title.get_width() // 2, 100))
+        self.screen.blit(title, (self.width // 2 - title.get_width() // 2, 80))
         
         code_text = self.font_medium.render(f"Room Code: {self.room_code}", True, (100, 255, 100))
-        self.screen.blit(code_text, (self.width // 2 - code_text.get_width() // 2, 200))
+        self.screen.blit(code_text, (self.width // 2 - code_text.get_width() // 2, 180))
         
         player_text = self.font_small.render(f"Player: {self.player_name}", True, (200, 200, 200))
         self.screen.blit(player_text, (self.width // 2 - player_text.get_width() // 2, 280))
         
-        info = self.font_small.render("Waiting for at least 2 players to start...", True, (200, 200, 200))
-        self.screen.blit(info, (self.width // 2 - info.get_width() // 2, 360))
+        info = self.font_small.render("Waiting for at least 2 players...", True, (200, 200, 200))
+        self.screen.blit(info, (self.width // 2 - info.get_width() // 2, 350))
         
-        start_btn = Button(300, 480, 200, 50, "Start Game")
+        start_btn = Button(300, 450, 200, 50, "Start Game")
         start_btn.draw(self.screen, self.font_small)
+        
+        back_btn = Button(50, 520, 100, 40, "Back")
+        back_btn.draw(self.screen, self.font_small)
 
     def save_network_field(self, field_index):
         """Save the current input field value"""
@@ -299,6 +310,10 @@ class Menu:
         pygame.draw.rect(self.screen, (255, 255, 255), (150, 320, 500, 50), 2)
         input_text = self.font_small.render(self.input_text, True, (255, 255, 255))
         self.screen.blit(input_text, (160, 330))
+        
+        back_btn = Button(50, 520, 100, 40, "Back")
+        back_btn.draw(self.screen, self.font_small)
+
 
     def draw_settings(self):
         title = self.font_large.render("Player Settings", True, (255, 255, 255))
@@ -311,6 +326,10 @@ class Menu:
         pygame.draw.rect(self.screen, (255, 255, 255), (150, 320, 500, 50), 2)
         input_text = self.font_small.render(self.input_text, True, (255, 255, 255))
         self.screen.blit(input_text, (160, 330))
+        
+        back_btn = Button(50, 520, 100, 40, "Back")
+        back_btn.draw(self.screen, self.font_small)
+
 
     def draw_waiting(self):
         title = self.font_large.render("Waiting for Players", True, (255, 255, 255))
@@ -345,5 +364,5 @@ class Menu:
         self.screen.blit(text, (160, 267))
         
         # Confirm button
-        confirm_btn = Button(300, 400, 200, 50, "Confirm")
+        confirm_btn = Button(300, 370, 200, 50, "Confirm")
         confirm_btn.draw(self.screen, self.font_small)
