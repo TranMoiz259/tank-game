@@ -86,13 +86,14 @@ class Server:
                         room_code = self.create_room()
                         player_name = message.get('player_name', 'Host')
                         self.rooms[room_code].add_player(player_name)
+                        player_count = self.rooms[room_code].get_player_count()
                         response = {
                             'status': 'success',
                             'room_code': room_code,
-                            'player_count': self.rooms[room_code].get_player_count()
+                            'player_count': player_count
                         }
                         client_socket.send(json.dumps(response).encode())
-                        print(f"Room {room_code} created by {player_name}")
+                        print(f"Room {room_code} created by {player_name}. Players: {player_count}/4")
                     
                     elif action == 'join_room':
                         room_code = message.get('room_code')
@@ -123,6 +124,11 @@ class Server:
                         if room_code in self.rooms and player_name in self.rooms[room_code].players:
                             self.rooms[room_code].players.remove(player_name)
                             print(f"{player_name} left room {room_code}. Players: {self.rooms[room_code].get_player_count()}/4")
+                            
+                            # Delete room if empty
+                            if self.rooms[room_code].get_player_count() == 0:
+                                del self.rooms[room_code]
+                                print(f"Room {room_code} deleted (empty)")
                     
                     elif action == 'start_game':
                         room_code = message.get('room_code')
@@ -154,4 +160,9 @@ class Server:
                 if player_name in self.rooms[room_code].players:
                     self.rooms[room_code].players.remove(player_name)
                     print(f"{player_name} disconnected from room {room_code}. Players: {self.rooms[room_code].get_player_count()}/4")
+                    
+                    # Delete room if empty
+                    if self.rooms[room_code].get_player_count() == 0:
+                        del self.rooms[room_code]
+                        print(f"Room {room_code} deleted (empty)")
             client_socket.close()
