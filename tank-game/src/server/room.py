@@ -1,29 +1,22 @@
 class Room:
-    def __init__(self, room_code, max_players=2):
+    def __init__(self, room_code):
         self.room_code = room_code
         self.players = []
-        self.max_players = max_players
+        self.max_players = 4
+        self.status = "waiting"  # waiting, playing, finished
 
-    def add_player(self, player):
+    def add_player(self, player_name):
         if len(self.players) < self.max_players:
-            self.players.append(player)
+            self.players.append(player_name)
+            print(f"Player {player_name} added. Total: {len(self.players)}/{self.max_players}")
             return True
         return False
 
-    def remove_player(self, player):
-        if player in self.players:
-            self.players.remove(player)
+    def get_player_count(self):
+        return len(self.players)
+
+    def start_game(self):
+        if len(self.players) >= 2:
+            self.status = "playing"
             return True
         return False
-
-    def is_full(self):
-        return len(self.players) >= self.max_players
-
-    def get_player_list(self):
-        return self.players
-
-    def get_room_code(self):
-        return self.room_code
-
-    def reset_room(self):
-        self.players = []

@@ -70,10 +70,18 @@ class Server:
                     elif action == 'join_room':
                         room_code = message.get('room_code')
                         player_name = message.get('player_name')
-                        if self.join_room(room_code, player_name):
-                            response = {'status': 'success', 'message': 'Joined room'}
-                            client_socket.send(json.dumps(response).encode())
-                            print(f"{player_name} joined room {room_code}")
+                        if room_code in self.rooms:
+                            if self.rooms[room_code].add_player(player_name):
+                                response = {
+                                    'status': 'success',
+                                    'message': 'Joined room',
+                                    'player_count': self.rooms[room_code].get_player_count()
+                                }
+                                client_socket.send(json.dumps(response).encode())
+                                print(f"{player_name} joined room {room_code}")
+                            else:
+                                response = {'status': 'error', 'message': 'Room is full'}
+                                client_socket.send(json.dumps(response).encode())
                         else:
                             response = {'status': 'error', 'message': 'Room not found'}
                             client_socket.send(json.dumps(response).encode())
