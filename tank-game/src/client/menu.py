@@ -6,6 +6,7 @@ from enum import Enum
 from src.shared.network import NetworkClient
 from src.server.server import Server
 import threading
+import time
 
 class MenuState(Enum):
     MAIN = 1
@@ -14,6 +15,7 @@ class MenuState(Enum):
     SETTINGS = 4
     WAITING = 5
     NETWORK_SETTINGS = 6
+    GAME = 7
 
 class Button:
     def __init__(self, x, y, width, height, text, color=(100, 100, 100), text_color=(255, 255, 255)):
@@ -110,10 +112,14 @@ class Menu:
                 self.input_text = self.player_name
                 self.input_active = True
         elif self.state == MenuState.WAITING:
-            if pygame.Rect(300, 380, 200, 50).collidepoint(pos):
+            if pygame.Rect(300, 410, 200, 50).collidepoint(pos) and self.player_count >= 2:
                 self.start_game()
             elif pygame.Rect(50, 520, 100, 40).collidepoint(pos):
                 self.leave_room()
+        elif self.state == MenuState.GAME:
+            if pygame.Rect(300, 520, 200, 40).collidepoint(pos):
+                self.state = MenuState.MAIN
+                self.room_code = ""
         elif self.state == MenuState.JOIN_ROOM:
             if pygame.Rect(50, 520, 100, 40).collidepoint(pos):
                 self.state = MenuState.MAIN
@@ -123,17 +129,18 @@ class Menu:
         elif self.state == MenuState.NETWORK_SETTINGS:
             self.save_network_field(self.current_input_field)
             
-            if pygame.Rect(150, 200, 500, 40).collidepoint(pos):
+            if pygame.Rect(150, 170, 500, 40).collidepoint(pos):
                 self.current_input_field = 0
                 self.input_text = self.server_ip
                 self.input_active = True
-            elif pygame.Rect(150, 280, 500, 40).collidepoint(pos):
+            elif pygame.Rect(150, 260, 500, 40).collidepoint(pos):
                 self.current_input_field = 1
                 self.input_text = str(self.server_port)
                 self.input_active = True
             elif pygame.Rect(300, 370, 200, 50).collidepoint(pos):
                 self.save_network_field(self.current_input_field)
                 self.confirm_network_settings()
+
     def leave_room(self):
         """Leave the current room"""
         if self.network:
@@ -158,30 +165,11 @@ class Menu:
             response = self.network.receive_message()
             if response and response.get('status') == 'success':
                 print("Game started!")
-                # TODO: Load game screen
+                self.state = MenuState.GAME
             else:
-                print("Cannot start game yet. Need 2+ players.")
+                print("Cannot start game. Need 2+ players.")
         else:
             print("Not connected to server")
-
-    def draw_waiting(self):
-        title = self.font_large.render("Waiting for Players", True, (255, 255, 255))
-        self.screen.blit(title, (self.width // 2 - title.get_width() // 2, 50))
-        
-        code_text = self.font_medium.render(f"Room Code: {self.room_code}", True, (100, 255, 100))
-        self.screen.blit(code_text, (self.width // 2 - code_text.get_width() // 2, 150))
-        
-        player_text = self.font_small.render(f"Player: {self.player_name}", True, (200, 200, 200))
-        self.screen.blit(player_text, (self.width // 2 - player_text.get_width() // 2, 250))
-        
-        info = self.font_small.render("Waiting for at least 2 players...", True, (200, 200, 200))
-        self.screen.blit(info, (self.width // 2 - info.get_width() // 2, 310))
-        
-        start_btn = Button(300, 380, 200, 50, "Start Game")
-        start_btn.draw(self.screen, self.font_small)
-        
-        leave_btn = Button(50, 520, 100, 40, "Leave")
-        leave_btn.draw(self.screen, self.font_small)
 
     def save_network_field(self, field_index):
         """Save the current input field value"""
@@ -233,7 +221,7 @@ class Menu:
             self.state = MenuState.NETWORK_SETTINGS
 
     def create_room(self):
-        """Create a room - server must be running separately"""
+        """Create a room"""
         if not self.player_name:
             print("Error: Please set your player name first!")
             self.state = MenuState.SETTINGS
@@ -241,9 +229,6 @@ class Menu:
             self.input_active = True
             return
             
-        self.room_code = self.generate_room_code()
-        
-        # Send create room request to server
         if self.network:
             message = {'action': 'create_room', 'player_name': self.player_name}
             self.network.send_message(message)
@@ -251,10 +236,9 @@ class Menu:
             if response and response.get('status') == 'success':
                 self.room_code = response.get('room_code')
                 self.player_count = response.get('player_count', 1)
-                print(f"Room created with code: {self.room_code}. Players: {self.player_count}")
+                print(f"Room created: {self.room_code}. Players: {self.player_count}")
+                self.state = MenuState.WAITING
         
-        self.state = MenuState.WAITING
-
     def join_room(self, code):
         """Join an existing room"""
         if not self.player_name:
@@ -271,17 +255,10 @@ class Menu:
             if response and response.get('status') == 'success':
                 self.player_count = response.get('player_count', 1)
                 print(f"Joined room. Players: {self.player_count}")
+                self.state = MenuState.WAITING
             else:
                 error_msg = response.get('message', 'Failed to join')
                 print(f"Failed to join: {error_msg}")
-                if error_msg == 'Player name already taken':
-                    print("Please use a different player name!")
-                    self.state = MenuState.SETTINGS
-                    self.input_text = self.player_name
-                    self.input_active = True
-                return
-        self.state = MenuState.WAITING
-        print(f"Joined room: {self.room_code}")
 
     def check_player_count(self):
         """Poll server for current player count"""
@@ -295,7 +272,6 @@ class Menu:
                 response = self.network.receive_message()
                 if response and response.get('status') == 'success':
                     self.player_count = response.get('player_count', 1)
-                    print(f"Player count updated: {self.player_count}")
             except Exception as e:
                 print(f"Error checking player count: {e}")
 
@@ -303,7 +279,12 @@ class Menu:
         return ''.join(random.choices(string.ascii_uppercase + string.digits, k=length))
 
     def update(self):
-        pass
+        """Update game state"""
+        if self.state == MenuState.WAITING:
+            current_time = time.time()
+            if current_time - self.last_count_check > 1:
+                self.last_count_check = current_time
+                self.check_player_count()
 
     def draw(self):
         self.screen.fill((30, 30, 30))
@@ -318,6 +299,8 @@ class Menu:
             self.draw_waiting()
         elif self.state == MenuState.NETWORK_SETTINGS:
             self.draw_network_settings()
+        elif self.state == MenuState.GAME:
+            self.draw_game()
         
         pygame.display.flip()
 
@@ -344,7 +327,6 @@ class Menu:
         back_btn = Button(50, 520, 100, 40, "Back")
         back_btn.draw(self.screen, self.font_small)
 
-
     def draw_settings(self):
         title = self.font_large.render("Player Settings", True, (255, 255, 255))
         self.screen.blit(title, (self.width // 2 - title.get_width() // 2, 100))
@@ -359,7 +341,6 @@ class Menu:
         
         back_btn = Button(50, 520, 100, 40, "Back")
         back_btn.draw(self.screen, self.font_small)
-
 
     def draw_waiting(self):
         title = self.font_large.render("Waiting for Players", True, (255, 255, 255))
@@ -380,7 +361,6 @@ class Menu:
             info = self.font_small.render(f"Waiting for {2 - self.player_count} more player(s)...", True, (200, 200, 200))
         self.screen.blit(info, (self.width // 2 - info.get_width() // 2, 330))
         
-        # Start button only visible if 2+ players
         if self.player_count >= 2:
             start_btn = Button(300, 410, 200, 50, "Start Game")
             start_btn.draw(self.screen, self.font_small)
@@ -388,11 +368,26 @@ class Menu:
         leave_btn = Button(50, 520, 100, 40, "Leave")
         leave_btn.draw(self.screen, self.font_small)
 
+    def draw_game(self):
+        title = self.font_large.render("GAME STARTED!", True, (100, 255, 100))
+        self.screen.blit(title, (self.width // 2 - title.get_width() // 2, 200))
+        
+        info = self.font_medium.render(f"Room: {self.room_code}", True, (200, 200, 200))
+        self.screen.blit(info, (self.width // 2 - info.get_width() // 2, 300))
+        
+        players = self.font_small.render(f"Players: {self.player_count}", True, (200, 200, 200))
+        self.screen.blit(players, (self.width // 2 - players.get_width() // 2, 380))
+        
+        msg = self.font_small.render("Game logic coming soon...", True, (150, 150, 150))
+        self.screen.blit(msg, (self.width // 2 - msg.get_width() // 2, 450))
+        
+        exit_btn = Button(300, 520, 200, 40, "Exit Game")
+        exit_btn.draw(self.screen, self.font_small)
+
     def draw_network_settings(self):
         title = self.font_large.render("Network Settings", True, (255, 255, 255))
         self.screen.blit(title, (self.width // 2 - title.get_width() // 2, 30))
         
-        # Server IP
         label = self.font_small.render("Server IP:", True, (255, 255, 255))
         self.screen.blit(label, (150, 150))
         pygame.draw.rect(self.screen, (100, 100, 100), (150, 170, 500, 40))
@@ -401,7 +396,6 @@ class Menu:
         text = self.font_small.render(display_text, True, (255, 255, 255))
         self.screen.blit(text, (160, 177))
         
-        # Server Port
         label = self.font_small.render("Server Port:", True, (255, 255, 255))
         self.screen.blit(label, (150, 240))
         pygame.draw.rect(self.screen, (100, 100, 100), (150, 260, 500, 40))
@@ -410,6 +404,5 @@ class Menu:
         text = self.font_small.render(display_text, True, (255, 255, 255))
         self.screen.blit(text, (160, 267))
         
-        # Confirm button
         confirm_btn = Button(300, 370, 200, 50, "Confirm")
         confirm_btn.draw(self.screen, self.font_small)

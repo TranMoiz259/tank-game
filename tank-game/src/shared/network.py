@@ -6,13 +6,24 @@ class NetworkClient:
         self.host = host
         self.port = port
         self.socket = None
-
     def connect(self):
         """Connect to the server"""
         try:
             self.socket = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
             self.socket.settimeout(5)
             self.socket.connect((self.host, self.port))
+            
+            # Send version check first
+            version_msg = {'action': 'version_check', 'version': '1.0.0'}
+            self.socket.send(json.dumps(version_msg).encode())
+            response = self.socket.recv(1024).decode()
+            response_data = json.loads(response)
+            
+            if response_data.get('status') != 'success':
+                print(f"Server rejected: {response_data.get('message')}")
+                self.socket.close()
+                return False
+            
             print(f"Connected to server at {self.host}:{self.port}")
             return True
         except socket.timeout:

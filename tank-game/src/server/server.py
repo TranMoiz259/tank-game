@@ -54,6 +54,25 @@ class Server:
         player_name = None
         room_code = None
         try:
+            # First message must be version check
+            data = client_socket.recv(1024).decode()
+            if not data:
+                return
+            
+            message = json.loads(data)
+            if message.get('action') == 'version_check':
+                client_version = message.get('version', '0.0.0')
+                server_version = '1.0.0'
+                if client_version != server_version:
+                    response = {'status': 'error', 'message': f'Version mismatch. Client: {client_version}, Server: {server_version}'}
+                    client_socket.send(json.dumps(response).encode())
+                    print(f"Client {client_address} rejected: version mismatch")
+                    return
+                else:
+                    response = {'status': 'success', 'message': 'Version OK'}
+                    client_socket.send(json.dumps(response).encode())
+            
+            # Continue with normal communication
             while True:
                 data = client_socket.recv(1024).decode()
                 if not data:
