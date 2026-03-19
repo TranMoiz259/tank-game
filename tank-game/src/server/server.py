@@ -63,9 +63,15 @@ class Server:
                     
                     if action == 'create_room':
                         room_code = self.create_room()
-                        response = {'status': 'success', 'room_code': room_code}
+                        player_name = message.get('player_name', 'Host')
+                        self.rooms[room_code].add_player(player_name)
+                        response = {
+                            'status': 'success',
+                            'room_code': room_code,
+                            'player_count': self.rooms[room_code].get_player_count()
+                        }
                         client_socket.send(json.dumps(response).encode())
-                        print(f"Room {room_code} created")
+                        print(f"Room {room_code} created by {player_name}")
                     
                     elif action == 'join_room':
                         room_code = message.get('room_code')

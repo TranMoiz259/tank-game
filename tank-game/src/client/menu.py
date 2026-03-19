@@ -53,7 +53,7 @@ class Menu:
         self.player_name = ""
         self.room_code = ""
         self.server_ip = "192.168.50.11"
-        self.server_port = 12345
+        self.server_port = 12345  # Changed from 12346 to 12345
         self.network = None
         self.server = None
         self.input_text = ""
@@ -177,12 +177,19 @@ class Menu:
         
         # Send create room request to server
         if self.network:
-            message = {'action': 'create_room'}
+            message = {'action': 'create_room', 'player_name': self.player_name}
             self.network.send_message(message)
             response = self.network.receive_message()
             if response and response.get('status') == 'success':
                 self.room_code = response.get('room_code')
                 print(f"Room created with code: {self.room_code}")
+                
+                # Now join the room as the creator
+                self.network.send_join_request(self.room_code, self.player_name)
+                join_response = self.network.receive_message()
+                if join_response and join_response.get('status') == 'success':
+                    player_count = join_response.get('player_count', 1)
+                    print(f"You joined the room. Players: {player_count}")
         
         self.state = MenuState.WAITING
 
