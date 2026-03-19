@@ -14,7 +14,6 @@ class MenuState(Enum):
     SETTINGS = 4
     WAITING = 5
     NETWORK_SETTINGS = 6
-    HOST_CHECK = 7
 
 class Button:
     def __init__(self, x, y, width, height, text, color=(100, 100, 100), text_color=(255, 255, 255)):
@@ -38,24 +37,6 @@ class Button:
     def update(self, pos):
         self.hovered = self.rect.collidepoint(pos)
 
-class Checkbox:
-    def __init__(self, x, y, size=30):
-        self.rect = pygame.Rect(x, y, size, size)
-        self.checked = False
-
-    def draw(self, surface):
-        pygame.draw.rect(surface, (100, 100, 100), self.rect)
-        pygame.draw.rect(surface, (255, 255, 255), self.rect, 2)
-        if self.checked:
-            pygame.draw.line(surface, (100, 255, 100), (self.rect.x + 5, self.rect.y + 15), (self.rect.x + 12, self.rect.y + 22), 3)
-            pygame.draw.line(surface, (100, 255, 100), (self.rect.x + 12, self.rect.y + 22), (self.rect.x + 25, self.rect.y + 5), 3)
-
-    def is_clicked(self, pos):
-        return self.rect.collidepoint(pos)
-
-    def toggle(self):
-        self.checked = not self.checked
-
 class Menu:
     def __init__(self):
         pygame.init()
@@ -67,46 +48,19 @@ class Menu:
         self.font_medium = pygame.font.Font(None, 36)
         self.font_small = pygame.font.Font(None, 24)
         
-        self.state = MenuState.HOST_CHECK
+        self.state = MenuState.NETWORK_SETTINGS
         self.running = True
         self.player_name = ""
         self.room_code = ""
-        self.server_ip = "192.168.1.100"
+        self.server_ip = "192.168.50.11"
         self.server_port = 12345
-        self.player_ip = self.get_local_ip()
-        self.player_port = 12346
         self.network = None
         self.server = None
         self.input_text = ""
         self.input_active = False
         self.current_input_field = 0
-        self.is_server_host = False
         
         self.setup_main_menu()
-
-    def get_local_ip(self):
-        """Get local machine IP address"""
-        try:
-            # Get all available IPs
-            import socket
-            hostname = socket.gethostname()
-            ips = socket.gethostbyname_ex(hostname)[2]
-            
-            # Prefer non-loopback IPs
-            for ip in ips:
-                if not ip.startswith('127.'):
-                    # Prefer 192.168.x.x over 172.x.x.x
-                    if ip.startswith('192.168.'):
-                        return ip
-            
-            # If no 192.168.x.x found, return first available
-            for ip in ips:
-                if not ip.startswith('127.'):
-                    return ip
-            
-            return "127.0.0.1"
-        except:
-            return "127.0.0.1"
 
     def setup_main_menu(self):
         self.create_room_btn = Button(150, 200, 500, 80, "Create Room")
@@ -142,13 +96,7 @@ class Menu:
             self.settings_btn.update(pos)
 
     def handle_click(self, pos):
-        if self.state == MenuState.HOST_CHECK:
-            if self.host_checkbox.is_clicked(pos):
-                self.host_checkbox.toggle()
-                self.is_server_host = self.host_checkbox.checked
-            elif pygame.Rect(300, 450, 200, 50).collidepoint(pos):
-                self.proceed_from_host_check()
-        elif self.state == MenuState.MAIN:
+        if self.state == MenuState.MAIN:
             if self.create_room_btn.is_clicked(pos):
                 self.create_room()
             elif self.join_room_btn.is_clicked(pos):
@@ -160,7 +108,6 @@ class Menu:
                 self.input_text = self.player_name
                 self.input_active = True
         elif self.state == MenuState.NETWORK_SETTINGS:
-            # Save previous field value
             self.save_network_field(self.current_input_field)
             
             if pygame.Rect(150, 200, 500, 40).collidepoint(pos):
@@ -171,17 +118,10 @@ class Menu:
                 self.current_input_field = 1
                 self.input_text = str(self.server_port)
                 self.input_active = True
-            elif pygame.Rect(150, 360, 500, 40).collidepoint(pos):
-                self.current_input_field = 2
-                self.input_text = self.player_ip
-                self.input_active = True
-            elif pygame.Rect(150, 440, 500, 40).collidepoint(pos):
-                self.current_input_field = 3
-                self.input_text = str(self.player_port)
-                self.input_active = True
-            elif pygame.Rect(300, 520, 200, 50).collidepoint(pos):
+            elif pygame.Rect(300, 400, 200, 50).collidepoint(pos):
                 self.save_network_field(self.current_input_field)
                 self.confirm_network_settings()
+
     def save_network_field(self, field_index):
         """Save the current input field value"""
         if field_index == 0:
@@ -191,13 +131,7 @@ class Menu:
                 self.server_port = int(self.input_text)
             except:
                 pass
-        elif field_index == 2:
-            self.player_ip = self.input_text
-        elif field_index == 3:
-            try:
-                self.player_port = int(self.input_text)
-            except:
-                pass
+
     def handle_key_input(self, event):
         if not self.input_active:
             return
@@ -217,23 +151,10 @@ class Menu:
         elif event.unicode.isprintable():
             self.input_text += event.unicode
 
-    def proceed_from_host_check(self):
-        """Proceed based on host selection"""
-        if self.is_server_host:
-            # Skip network settings for server host
-            self.state = MenuState.MAIN
-        else:
-            # Go to network settings for client
-            self.state = MenuState.NETWORK_SETTINGS
-            self.input_text = self.server_ip
-            self.current_input_field = 0
-            self.input_active = True
-
     def confirm_network_settings(self):
         """Confirm network settings and connect"""
         try:
             self.server_port = int(self.server_port) if isinstance(self.server_port, str) else self.server_port
-            self.player_port = int(self.player_port) if isinstance(self.player_port, str) else self.player_port
             
             self.network = NetworkClient(host=self.server_ip, port=self.server_port)
             if self.network.connect():
@@ -251,17 +172,19 @@ class Menu:
             self.state = MenuState.NETWORK_SETTINGS
 
     def create_room(self):
-        """Create a room and start server if needed"""
+        """Create a room - server must be running separately"""
         self.room_code = self.generate_room_code()
         
-        # Start local server on this machine
-        self.server = Server(host=self.player_ip, port=self.player_port)
-        server_thread = threading.Thread(target=self.server.run)
-        server_thread.daemon = True
-        server_thread.start()
+        # Send create room request to server
+        if self.network:
+            message = {'action': 'create_room'}
+            self.network.send_message(message)
+            response = self.network.receive_message()
+            if response and response.get('status') == 'success':
+                self.room_code = response.get('room_code')
+                print(f"Room created with code: {self.room_code}")
         
         self.state = MenuState.WAITING
-        print(f"Room created with code: {self.room_code}")
 
     def join_room(self, code):
         """Join an existing room"""
@@ -290,8 +213,6 @@ class Menu:
             self.draw_waiting()
         elif self.state == MenuState.NETWORK_SETTINGS:
             self.draw_network_settings()
-        elif self.state == MenuState.HOST_CHECK:
-            self.draw_host_check()
         
         pygame.display.flip()
 
@@ -337,60 +258,28 @@ class Menu:
         info = self.font_small.render("Waiting for at least 2 players to start...", True, (200, 200, 200))
         self.screen.blit(info, (self.width // 2 - info.get_width() // 2, 400))
 
-    def draw_host_check(self):
-        title = self.font_large.render("Are you the Server Host?", True, (255, 255, 255))
-        self.screen.blit(title, (self.width // 2 - title.get_width() // 2, 150))
-        
-        self.host_checkbox = Checkbox(250, 300)
-        self.host_checkbox.checked = self.is_server_host
-        self.host_checkbox.draw(self.screen)
-        
-        label = self.font_medium.render("Yes, I am hosting", True, (255, 255, 255))
-        self.screen.blit(label, (300, 300))
-        
-        confirm_btn = Button(300, 450, 200, 50, "Continue")
-        confirm_btn.draw(self.screen, self.font_small)
-
     def draw_network_settings(self):
         title = self.font_large.render("Network Settings", True, (255, 255, 255))
         self.screen.blit(title, (self.width // 2 - title.get_width() // 2, 30))
         
         # Server IP
         label = self.font_small.render("Server IP:", True, (255, 255, 255))
-        self.screen.blit(label, (150, 180))
-        pygame.draw.rect(self.screen, (100, 100, 100), (150, 200, 500, 40))
-        pygame.draw.rect(self.screen, (255, 255, 255) if self.current_input_field == 0 else (100, 100, 100), (150, 200, 500, 40), 2)
+        self.screen.blit(label, (150, 150))
+        pygame.draw.rect(self.screen, (100, 100, 100), (150, 170, 500, 40))
+        pygame.draw.rect(self.screen, (255, 255, 255) if self.current_input_field == 0 else (100, 100, 100), (150, 170, 500, 40), 2)
         display_text = self.input_text if self.current_input_field == 0 else self.server_ip
         text = self.font_small.render(display_text, True, (255, 255, 255))
-        self.screen.blit(text, (160, 207))
+        self.screen.blit(text, (160, 177))
         
         # Server Port
         label = self.font_small.render("Server Port:", True, (255, 255, 255))
-        self.screen.blit(label, (150, 260))
-        pygame.draw.rect(self.screen, (100, 100, 100), (150, 280, 500, 40))
-        pygame.draw.rect(self.screen, (255, 255, 255) if self.current_input_field == 1 else (100, 100, 100), (150, 280, 500, 40), 2)
+        self.screen.blit(label, (150, 240))
+        pygame.draw.rect(self.screen, (100, 100, 100), (150, 260, 500, 40))
+        pygame.draw.rect(self.screen, (255, 255, 255) if self.current_input_field == 1 else (100, 100, 100), (150, 260, 500, 40), 2)
         display_text = self.input_text if self.current_input_field == 1 else str(self.server_port)
         text = self.font_small.render(display_text, True, (255, 255, 255))
-        self.screen.blit(text, (160, 287))
-        
-        # Player IP
-        label = self.font_small.render("Your IP:", True, (255, 255, 255))
-        self.screen.blit(label, (150, 340))
-        pygame.draw.rect(self.screen, (100, 100, 100), (150, 360, 500, 40))
-        pygame.draw.rect(self.screen, (255, 255, 255) if self.current_input_field == 2 else (100, 100, 100), (150, 360, 500, 40), 2)
-        display_text = self.input_text if self.current_input_field == 2 else self.player_ip
-        text = self.font_small.render(display_text, True, (255, 255, 255))
-        self.screen.blit(text, (160, 367))
-        
-        # Player Port
-        label = self.font_small.render("Your Port:", True, (255, 255, 255))
-        self.screen.blit(label, (150, 420))
-        pygame.draw.rect(self.screen, (100, 100, 100), (150, 440, 500, 40))
-        pygame.draw.rect(self.screen, (255, 255, 255) if self.current_input_field == 3 else (100, 100, 100), (150, 440, 500, 40), 2)
-        display_text = self.input_text if self.current_input_field == 3 else str(self.player_port)
-        text = self.font_small.render(display_text, True, (255, 255, 255))
-        self.screen.blit(text, (160, 447))
+        self.screen.blit(text, (160, 267))
         
         # Confirm button
-        confirm_btn = Button(300, 520, 200, 50, "Confirm")
+        confirm_btn = Button(300, 400, 200, 50, "Confirm")
         confirm_btn.draw(self.screen, self.font_small)
