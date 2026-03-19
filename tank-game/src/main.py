@@ -1,15 +1,15 @@
-import socket
+import sys
+import os
+
+# Add parent directory to path
+sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
+
+from src.server.server import Server
+from src.client.menu import Menu
+from src.shared.network import NetworkClient
 import threading
-from client.menu import Menu
-from server.server import Server
 
 def main():
-    # Initialize the server
-    server = Server()
-    server_thread = threading.Thread(target=server.run)
-    server_thread.start()
-
-    # Initialize the client menu
     menu = Menu()
     menu.run()
 

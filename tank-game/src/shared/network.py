@@ -11,30 +11,38 @@ class NetworkClient:
         """Connect to the server"""
         try:
             self.socket = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+            self.socket.settimeout(5)
             self.socket.connect((self.host, self.port))
             print(f"Connected to server at {self.host}:{self.port}")
             return True
+        except socket.timeout:
+            print(f"Connection timeout: Server not responding at {self.host}:{self.port}")
+            return False
+        except ConnectionRefusedError:
+            print(f"Connection refused: No server at {self.host}:{self.port}")
+            return False
         except Exception as e:
             print(f"Failed to connect: {e}")
             return False
-
     def send_message(self, message):
         """Send a message to the server"""
         try:
-            self.socket.send(json.dumps(message).encode())
-            return True
+            if self.socket:
+                self.socket.send(json.dumps(message).encode())
+                return True
         except Exception as e:
             print(f"Failed to send message: {e}")
-            return False
+        return False
 
     def receive_message(self):
         """Receive a message from the server"""
         try:
-            data = self.socket.recv(1024).decode()
-            return json.loads(data) if data else None
+            if self.socket:
+                data = self.socket.recv(1024).decode()
+                return json.loads(data) if data else None
         except Exception as e:
             print(f"Failed to receive message: {e}")
-            return None
+        return None
 
     def send_join_request(self, room_code, player_name):
         """Send a join room request"""
