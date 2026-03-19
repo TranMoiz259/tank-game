@@ -91,7 +91,7 @@ class ServerGUI:
         self.screen.blit(status, (self.width // 2 - status.get_width() // 2, 100))
         
         # Server info
-        info = self.font_small.render(f"Host: {self.host} | Port: {self.port}", True, (200, 200, 200))
+        info = self.font_small.render(f"Host: {self.server.host} | Port: {self.server.port}", True, (200, 200, 200))
         self.screen.blit(info, (self.width // 2 - info.get_width() // 2, 160))
         
         # Active rooms

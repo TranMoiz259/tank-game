@@ -110,7 +110,7 @@ class Server:
                                     'player_count': self.rooms[room_code].get_player_count()
                                 }
                                 client_socket.send(json.dumps(response).encode())
-                                print(f"{player_name} joined room {room_code}")
+                                print(f"{player_name} joined room {room_code}. Players: {self.rooms[room_code].get_player_count()}/4")
                             else:
                                 response = {'status': 'error', 'message': 'Room is full'}
                                 client_socket.send(json.dumps(response).encode())
@@ -129,6 +129,17 @@ class Server:
                             if self.rooms[room_code].get_player_count() == 0:
                                 del self.rooms[room_code]
                                 print(f"Room {room_code} deleted (empty)")
+                    
+                    elif action == 'get_player_count':
+                        room_code = message.get('room_code')
+                        if room_code in self.rooms:
+                            response = {
+                                'status': 'success',
+                                'player_count': self.rooms[room_code].get_player_count()
+                            }
+                        else:
+                            response = {'status': 'error', 'player_count': 0}
+                        client_socket.send(json.dumps(response).encode())
                     
                     elif action == 'start_game':
                         room_code = message.get('room_code')
