@@ -240,7 +240,6 @@ class Menu:
         except Exception as e:
             print(f"Error: {e}")
             self.state = MenuState.NETWORK_SETTINGS
-
     def create_room(self):
         """Create a room"""
         if not self.player_name:
@@ -258,21 +257,10 @@ class Menu:
                 self.room_code = response.get('room_code')
                 self.player_count = response.get('player_count', 1)
                 print(f"Room created: {self.room_code}. Players: {self.player_count}/4")
-                self.last_count_check = time.time()  # Set to current time, not 0
+                self.last_count_check = time.time()
                 self.state = MenuState.WAITING
             else:
                 print("Failed to create room")
-            
-        if self.network:
-            message = {'action': 'create_room', 'player_name': self.player_name}
-            self.network.send_message(message)
-            response = self.network.receive_message(timeout=2)
-            if response and response.get('status') == 'success':
-                self.room_code = response.get('room_code')
-                self.player_count = response.get('player_count', 1)
-                print(f"Room created: {self.room_code}. Players: {self.player_count}")
-                self.last_count_check = 0
-                self.state = MenuState.WAITING
 
     def join_room(self, code):
         """Join an existing room"""
@@ -290,7 +278,7 @@ class Menu:
             if response and response.get('status') == 'success':
                 self.player_count = response.get('player_count', 1)
                 print(f"Joined room. Players: {self.player_count}")
-                self.last_count_check = 0
+                self.last_count_check = time.time()  # Changed from 0
                 self.state = MenuState.WAITING
             else:
                 error_msg = response.get('message', 'Failed to join')

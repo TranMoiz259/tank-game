@@ -20,20 +20,24 @@ class ServerGUI:
         self.server_running = False
         self.logs = []
         self.max_logs = 15
+        self.server_thread = None
+        print("[DEBUG] ServerGUI initialized")
         
     def start_server(self):
         """Start server in background thread"""
+        print("[DEBUG] start_server() called")
         if not self.server_running:
+            print("[DEBUG] Starting server thread")
             self.server_running = True
-            server_thread = threading.Thread(target=self.server.run)
-            server_thread.daemon = True
-            server_thread.start()
+            self.server_thread = threading.Thread(target=self.server.run, daemon=True)
+            self.server_thread.start()
             self.add_log(f"Server started on {self.host}:{self.port}")
     
     def stop_server(self):
         """Stop the server"""
         if self.server_running:
             self.server_running = False
+            self.server.running = False
             self.add_log("Server stopping...")
     
     def add_log(self, message):
@@ -45,6 +49,7 @@ class ServerGUI:
     
     def run(self):
         """Main server GUI loop"""
+        print("[DEBUG] run() called")
         clock = pygame.time.Clock()
         self.start_server()
         
@@ -69,7 +74,6 @@ class ServerGUI:
     
     def handle_click(self, pos):
         """Handle mouse clicks on buttons"""
-        # Stop button
         if pygame.Rect(300, 450, 200, 50).collidepoint(pos):
             if self.server_running:
                 self.stop_server()
@@ -80,31 +84,26 @@ class ServerGUI:
         """Draw the GUI"""
         self.screen.fill((30, 30, 30))
         
-        # Title
         title = self.font_large.render("Tank Game Server", True, (255, 255, 255))
         self.screen.blit(title, (self.width // 2 - title.get_width() // 2, 30))
         
-        # Server status
         status_color = (100, 255, 100) if self.server_running else (255, 100, 100)
         status_text = "Running" if self.server_running else "Stopped"
         status = self.font_medium.render(f"Status: {status_text}", True, status_color)
         self.screen.blit(status, (self.width // 2 - status.get_width() // 2, 100))
         
-        # Server info
-        info = self.font_small.render(f"Host: {self.server.host} | Port: {self.server.port}", True, (200, 200, 200))
+        info = self.font_small.render(f"Host: {self.host} | Port: {self.port}", True, (200, 200, 200))
         self.screen.blit(info, (self.width // 2 - info.get_width() // 2, 160))
         
-        # Active rooms
-        room_count = len(self.server.rooms)
-        rooms_text = self.font_small.render(f"Active Rooms: {room_count}", True, (100, 200, 255))
-        self.screen.blit(rooms_text, (50, 220))
+        if self.server:
+            room_count = len(self.server.rooms)
+            rooms_text = self.font_small.render(f"Active Rooms: {room_count}", True, (100, 200, 255))
+            self.screen.blit(rooms_text, (50, 220))
+            
+            total_players = sum(room.get_player_count() for room in self.server.rooms.values())
+            players_text = self.font_small.render(f"Total Players: {total_players}", True, (100, 200, 255))
+            self.screen.blit(players_text, (50, 260))
         
-        # Player count
-        total_players = sum(room.get_player_count() for room in self.server.rooms.values())
-        players_text = self.font_small.render(f"Total Players: {total_players}", True, (100, 200, 255))
-        self.screen.blit(players_text, (50, 260))
-        
-        # Logs
         log_title = self.font_small.render("Logs:", True, (200, 200, 200))
         self.screen.blit(log_title, (50, 310))
         
@@ -112,7 +111,6 @@ class ServerGUI:
             log_text = self.font_small.render(log, True, (150, 150, 150))
             self.screen.blit(log_text, (70, 340 + i * 22))
         
-        # Button
         button_text = "Stop Server" if self.server_running else "Start Server"
         button_color = (200, 50, 50) if self.server_running else (50, 200, 50)
         
@@ -122,7 +120,6 @@ class ServerGUI:
         btn_text = self.font_medium.render(button_text, True, (255, 255, 255))
         self.screen.blit(btn_text, (310, 460))
         
-        # Instructions
         instr = self.font_small.render("Press ESC to quit", True, (100, 100, 100))
         self.screen.blit(instr, (self.width // 2 - instr.get_width() // 2, 550))
         

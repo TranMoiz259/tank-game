@@ -37,20 +37,18 @@ class LauncherMenu:
         # Client button
         if pygame.Rect(150, 250, 500, 80).collidepoint(pos):
             self.running = False
-            pygame.quit()  # Quit launcher pygame
+            pygame.quit()
             menu = Menu()
             menu.run()
-            pygame.init()  # Reinit for launcher if needed
-            self.screen = pygame.display.set_mode((self.width, self.height))
+            sys.exit()
         
         # Server button
         elif pygame.Rect(150, 370, 500, 80).collidepoint(pos):
             self.running = False
-            pygame.quit()  # Quit launcher pygame
+            pygame.quit()
             server_gui = ServerGUI('0.0.0.0', 12345)
             server_gui.run()
-            pygame.init()  # Reinit for launcher if needed
-            self.screen = pygame.display.set_mode((self.width, self.height))
+            sys.exit()
     
     def draw(self):
         if not pygame.display.get_surface():

@@ -10,9 +10,10 @@ class Server:
         self.host = host
         self.port = port
         self.rooms = {}
-        self.socket = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+        self.socket = None
         self.clients = {}
         self.client_lock = threading.Lock()
+        self.running = False
 
     def generate_room_code(self, length=6):
         return ''.join(random.choices(string.ascii_uppercase + string.digits, k=length))
@@ -30,31 +31,46 @@ class Server:
 
     def run(self):
         """Start the server and listen for client connections"""
-        self.socket.bind((self.host, self.port))
-        self.socket.listen(5)
-        print(f"Server started on {self.host}:{self.port}")
+        if self.running:
+            return
+        
+        self.running = True
+        self.socket = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+        self.socket.setsockopt(socket.SOL_SOCKET, socket.SO_REUSEADDR, 1)
         
         try:
-            while True:
-                client_socket, client_address = self.socket.accept()
-                print(f"Client connected: {client_address}")
-                client_thread = threading.Thread(
-                    target=self.handle_client,
-                    args=(client_socket, client_address)
-                )
-                client_thread.daemon = True
-                client_thread.start()
-        except KeyboardInterrupt:
-            print("Server shutting down...")
+            self.socket.bind((self.host, self.port))
+            self.socket.listen(5)
+            print(f"Server started on {self.host}:{self.port}")  # ONLY ONE PRINT HERE
+            
+            while self.running:
+                try:
+                    self.socket.settimeout(1.0)
+                    client_socket, client_address = self.socket.accept()
+                    print(f"Client connected: {client_address}")
+                    client_thread = threading.Thread(
+                        target=self.handle_client,
+                        args=(client_socket, client_address),
+                        daemon=True
+                    )
+                    client_thread.start()
+                except socket.timeout:
+                    continue
+                except OSError:
+                    if self.running:
+                        break
+        except Exception as e:
+            print(f"Server error: {e}")
         finally:
-            self.socket.close()
+            self.running = False
+            if self.socket:
+                self.socket.close()
 
     def handle_client(self, client_socket, client_address):
         """Handle communication with a connected client"""
         player_name = None
         room_code = None
         try:
-            # First message must be version check
             data = client_socket.recv(1024).decode()
             if not data:
                 return
@@ -72,7 +88,6 @@ class Server:
                     response = {'status': 'success', 'message': 'Version OK'}
                     client_socket.send(json.dumps(response).encode())
             
-            # Continue with normal communication
             while True:
                 data = client_socket.recv(1024).decode()
                 if not data:
@@ -125,7 +140,6 @@ class Server:
                             self.rooms[room_code].players.remove(player_name)
                             print(f"{player_name} left room {room_code}. Players: {self.rooms[room_code].get_player_count()}/4")
                             
-                            # Delete room if empty
                             if self.rooms[room_code].get_player_count() == 0:
                                 del self.rooms[room_code]
                                 print(f"Room {room_code} deleted (empty)")
@@ -166,13 +180,11 @@ class Server:
         except Exception as e:
             print(f"Error handling client {client_address}: {e}")
         finally:
-            # Remove player from room when disconnecting
             if room_code and player_name and room_code in self.rooms:
                 if player_name in self.rooms[room_code].players:
                     self.rooms[room_code].players.remove(player_name)
                     print(f"{player_name} disconnected from room {room_code}. Players: {self.rooms[room_code].get_player_count()}/4")
                     
-                    # Delete room if empty
                     if self.rooms[room_code].get_player_count() == 0:
                         del self.rooms[room_code]
                         print(f"Room {room_code} deleted (empty)")
