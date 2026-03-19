@@ -6,6 +6,7 @@ class NetworkClient:
         self.host = host
         self.port = port
         self.socket = None
+    
     def connect(self):
         """Connect to the server"""
         try:
@@ -16,6 +17,7 @@ class NetworkClient:
             # Send version check first
             version_msg = {'action': 'version_check', 'version': '1.0.0'}
             self.socket.send(json.dumps(version_msg).encode())
+            self.socket.settimeout(5)
             response = self.socket.recv(1024).decode()
             response_data = json.loads(response)
             
@@ -24,6 +26,8 @@ class NetworkClient:
                 self.socket.close()
                 return False
             
+            # Set non-blocking for regular communication
+            self.socket.setblocking(False)
             print(f"Connected to server at {self.host}:{self.port}")
             return True
         except socket.timeout:
@@ -35,35 +39,41 @@ class NetworkClient:
         except Exception as e:
             print(f"Failed to connect: {e}")
             return False
+    
     def send_message(self, message):
         """Send a message to the server"""
         try:
-            if self.socket:
-                self.socket.send(json.dumps(message).encode())
-                return True
+            self.socket.send(json.dumps(message).encode())
         except Exception as e:
-            print(f"Failed to send message: {e}")
-        return False
-
-    def receive_message(self):
-        """Receive a message from the server"""
+            print(f"Error sending message: {e}")
+    
+    def receive_message(self, timeout=0.5):
+        """Receive a message from the server (non-blocking)"""
         try:
-            if self.socket:
+            # Use select for timeout on non-blocking socket
+            import select
+            ready = select.select([self.socket], [], [], timeout)
+            if ready[0]:
                 data = self.socket.recv(1024).decode()
-                return json.loads(data) if data else None
+                if data:
+                    return json.loads(data)
+            return None
+        except json.JSONDecodeError:
+            print("Invalid JSON received")
+            return None
         except Exception as e:
             print(f"Failed to receive message: {e}")
-        return None
-
+            return None
+    
     def send_join_request(self, room_code, player_name):
-        """Send a join room request"""
+        """Send join room request"""
         message = {
             'action': 'join_room',
             'room_code': room_code,
             'player_name': player_name
         }
-        return self.send_message(message)
-
+        self.send_message(message)
+    
     def close(self):
         """Close the connection"""
         if self.socket:

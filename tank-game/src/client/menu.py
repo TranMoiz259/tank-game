@@ -269,12 +269,15 @@ class Menu:
                     'room_code': self.room_code
                 }
                 self.network.send_message(message)
-                response = self.network.receive_message()
+                response = self.network.receive_message(timeout=0.2)
                 if response and response.get('status') == 'success':
-                    self.player_count = response.get('player_count', 1)
+                    new_count = response.get('player_count', 1)
+                    if new_count != self.player_count:
+                        self.player_count = new_count
+                        print(f"Player count updated: {self.player_count}")
             except Exception as e:
-                print(f"Error checking player count: {e}")
-
+                pass  # Silent fail, don't spam errors
+            
     def generate_room_code(self, length=6):
         return ''.join(random.choices(string.ascii_uppercase + string.digits, k=length))
 
