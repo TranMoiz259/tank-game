@@ -9,4 +9,4 @@ FPS = 60
 # Game settings
 GAME_TITLE = "LAN Tank Battle"
 GAME_VERSION = "1.0"
-GAME_DESCRIPTION = "A multiplayer tank game that runs on LAN."
+GAME_DESCRIPTION = "A multiplayer tank game that runs on LAN, this game ruined my sleeps."

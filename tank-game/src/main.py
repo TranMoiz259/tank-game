@@ -37,16 +37,25 @@ class LauncherMenu:
         # Client button
         if pygame.Rect(150, 250, 500, 80).collidepoint(pos):
             self.running = False
+            pygame.quit()  # Quit launcher pygame
             menu = Menu()
             menu.run()
+            pygame.init()  # Reinit for launcher if needed
+            self.screen = pygame.display.set_mode((self.width, self.height))
         
         # Server button
         elif pygame.Rect(150, 370, 500, 80).collidepoint(pos):
             self.running = False
+            pygame.quit()  # Quit launcher pygame
             server_gui = ServerGUI('0.0.0.0', 12345)
             server_gui.run()
+            pygame.init()  # Reinit for launcher if needed
+            self.screen = pygame.display.set_mode((self.width, self.height))
     
     def draw(self):
+        if not pygame.display.get_surface():
+            return
+            
         self.screen.fill((30, 30, 30))
         
         title = self.font_large.render("Tank Game", True, (255, 255, 255))

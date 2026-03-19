@@ -2,6 +2,8 @@
 
 A multiplayer LAN-based tank game built with Python and Pygame.
 
+Fuck this game
+
 ## Features
 
 - **Multiplayer LAN Support**: Play with up to 4 players on the same network
