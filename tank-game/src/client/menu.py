@@ -108,10 +108,10 @@ class Menu:
                 self.input_text = self.player_name
                 self.input_active = True
         elif self.state == MenuState.WAITING:
-            if pygame.Rect(300, 450, 200, 50).collidepoint(pos):
+            if pygame.Rect(300, 380, 200, 50).collidepoint(pos):
                 self.start_game()
             elif pygame.Rect(50, 520, 100, 40).collidepoint(pos):
-                self.state = MenuState.MAIN
+                self.leave_room()
         elif self.state == MenuState.JOIN_ROOM:
             if pygame.Rect(50, 520, 100, 40).collidepoint(pos):
                 self.state = MenuState.MAIN
@@ -132,6 +132,18 @@ class Menu:
             elif pygame.Rect(300, 370, 200, 50).collidepoint(pos):
                 self.save_network_field(self.current_input_field)
                 self.confirm_network_settings()
+    def leave_room(self):
+        """Leave the current room"""
+        if self.network:
+            message = {
+                'action': 'leave_room',
+                'room_code': self.room_code,
+                'player_name': self.player_name
+            }
+            self.network.send_message(message)
+        self.room_code = ""
+        self.state = MenuState.MAIN
+        print(f"{self.player_name} left the room")
 
     def start_game(self):
         """Start the game"""
@@ -152,22 +164,22 @@ class Menu:
 
     def draw_waiting(self):
         title = self.font_large.render("Waiting for Players", True, (255, 255, 255))
-        self.screen.blit(title, (self.width // 2 - title.get_width() // 2, 80))
+        self.screen.blit(title, (self.width // 2 - title.get_width() // 2, 50))
         
         code_text = self.font_medium.render(f"Room Code: {self.room_code}", True, (100, 255, 100))
-        self.screen.blit(code_text, (self.width // 2 - code_text.get_width() // 2, 180))
+        self.screen.blit(code_text, (self.width // 2 - code_text.get_width() // 2, 150))
         
         player_text = self.font_small.render(f"Player: {self.player_name}", True, (200, 200, 200))
-        self.screen.blit(player_text, (self.width // 2 - player_text.get_width() // 2, 280))
+        self.screen.blit(player_text, (self.width // 2 - player_text.get_width() // 2, 250))
         
         info = self.font_small.render("Waiting for at least 2 players...", True, (200, 200, 200))
-        self.screen.blit(info, (self.width // 2 - info.get_width() // 2, 350))
+        self.screen.blit(info, (self.width // 2 - info.get_width() // 2, 310))
         
-        start_btn = Button(300, 450, 200, 50, "Start Game")
+        start_btn = Button(300, 380, 200, 50, "Start Game")
         start_btn.draw(self.screen, self.font_small)
         
-        back_btn = Button(50, 520, 100, 40, "Back")
-        back_btn.draw(self.screen, self.font_small)
+        leave_btn = Button(50, 520, 100, 40, "Leave")
+        leave_btn.draw(self.screen, self.font_small)
 
     def save_network_field(self, field_index):
         """Save the current input field value"""

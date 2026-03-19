@@ -51,6 +51,8 @@ class Server:
 
     def handle_client(self, client_socket, client_address):
         """Handle communication with a connected client"""
+        player_name = None
+        room_code = None
         try:
             while True:
                 data = client_socket.recv(1024).decode()
@@ -77,7 +79,6 @@ class Server:
                         room_code = message.get('room_code')
                         player_name = message.get('player_name')
                         if room_code in self.rooms:
-                            # Check if player name already exists in room
                             if player_name in self.rooms[room_code].players:
                                 response = {'status': 'error', 'message': 'Player name already taken'}
                                 client_socket.send(json.dumps(response).encode())
@@ -97,11 +98,13 @@ class Server:
                             response = {'status': 'error', 'message': 'Room not found'}
                             client_socket.send(json.dumps(response).encode())
                     
-                    elif action == 'list_rooms':
-                        rooms_list = list(self.rooms.keys())
-                        response = {'status': 'success', 'rooms': rooms_list}
-                        client_socket.send(json.dumps(response).encode())
-
+                    elif action == 'leave_room':
+                        room_code = message.get('room_code')
+                        player_name = message.get('player_name')
+                        if room_code in self.rooms and player_name in self.rooms[room_code].players:
+                            self.rooms[room_code].players.remove(player_name)
+                            print(f"{player_name} left room {room_code}. Players: {self.rooms[room_code].get_player_count()}/4")
+                    
                     elif action == 'start_game':
                         room_code = message.get('room_code')
                         if room_code in self.rooms:
@@ -115,6 +118,11 @@ class Server:
                         else:
                             response = {'status': 'error', 'message': 'Room not found'}
                             client_socket.send(json.dumps(response).encode())
+                    
+                    elif action == 'list_rooms':
+                        rooms_list = list(self.rooms.keys())
+                        response = {'status': 'success', 'rooms': rooms_list}
+                        client_socket.send(json.dumps(response).encode())
                         
                 except json.JSONDecodeError:
                     print(f"Invalid JSON from {client_address}")
@@ -122,4 +130,9 @@ class Server:
         except Exception as e:
             print(f"Error handling client {client_address}: {e}")
         finally:
+            # Remove player from room when disconnecting
+            if room_code and player_name and room_code in self.rooms:
+                if player_name in self.rooms[room_code].players:
+                    self.rooms[room_code].players.remove(player_name)
+                    print(f"{player_name} disconnected from room {room_code}. Players: {self.rooms[room_code].get_player_count()}/4")
             client_socket.close()
