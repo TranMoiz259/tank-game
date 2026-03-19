@@ -87,11 +87,24 @@ class Menu:
     def get_local_ip(self):
         """Get local machine IP address"""
         try:
-            s = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
-            s.connect(("8.8.8.8", 80))
-            ip = s.getsockname()[0]
-            s.close()
-            return ip
+            # Get all available IPs
+            import socket
+            hostname = socket.gethostname()
+            ips = socket.gethostbyname_ex(hostname)[2]
+            
+            # Prefer non-loopback IPs
+            for ip in ips:
+                if not ip.startswith('127.'):
+                    # Prefer 192.168.x.x over 172.x.x.x
+                    if ip.startswith('192.168.'):
+                        return ip
+            
+            # If no 192.168.x.x found, return first available
+            for ip in ips:
+                if not ip.startswith('127.'):
+                    return ip
+            
+            return "127.0.0.1"
         except:
             return "127.0.0.1"
 

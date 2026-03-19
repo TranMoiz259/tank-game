@@ -6,12 +6,13 @@ import json
 from .room import Room
 
 class Server:
-    def __init__(self, host='localhost', port=12345):
+    def __init__(self, host='0.0.0.0', port=12345):
         self.host = host
         self.port = port
         self.rooms = {}
         self.socket = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
         self.clients = {}
+        self.client_lock = threading.Lock()
 
     def generate_room_code(self, length=6):
         return ''.join(random.choices(string.ascii_uppercase + string.digits, k=length))
@@ -64,7 +65,7 @@ class Server:
                         room_code = self.create_room()
                         response = {'status': 'success', 'room_code': room_code}
                         client_socket.send(json.dumps(response).encode())
-                        print(f"Room {room_code} created by {client_address}")
+                        print(f"Room {room_code} created")
                     
                     elif action == 'join_room':
                         room_code = message.get('room_code')
@@ -77,6 +78,12 @@ class Server:
                             response = {'status': 'error', 'message': 'Room not found'}
                             client_socket.send(json.dumps(response).encode())
                             print(f"Failed: Room {room_code} not found")
+                    
+                    elif action == 'list_rooms':
+                        rooms_list = list(self.rooms.keys())
+                        response = {'status': 'success', 'rooms': rooms_list}
+                        client_socket.send(json.dumps(response).encode())
+                        
                 except json.JSONDecodeError:
                     print(f"Invalid JSON from {client_address}")
                     
