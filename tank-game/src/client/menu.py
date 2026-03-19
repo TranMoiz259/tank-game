@@ -147,6 +147,9 @@ class Menu:
                 self.input_text = self.player_name
                 self.input_active = True
         elif self.state == MenuState.NETWORK_SETTINGS:
+            # Save previous field value
+            self.save_network_field(self.current_input_field)
+            
             if pygame.Rect(150, 200, 500, 40).collidepoint(pos):
                 self.current_input_field = 0
                 self.input_text = self.server_ip
@@ -164,8 +167,24 @@ class Menu:
                 self.input_text = str(self.player_port)
                 self.input_active = True
             elif pygame.Rect(300, 520, 200, 50).collidepoint(pos):
+                self.save_network_field(self.current_input_field)
                 self.confirm_network_settings()
-
+    def save_network_field(self, field_index):
+        """Save the current input field value"""
+        if field_index == 0:
+            self.server_ip = self.input_text
+        elif field_index == 1:
+            try:
+                self.server_port = int(self.input_text)
+            except:
+                pass
+        elif field_index == 2:
+            self.player_ip = self.input_text
+        elif field_index == 3:
+            try:
+                self.player_port = int(self.input_text)
+            except:
+                pass
     def handle_key_input(self, event):
         if not self.input_active:
             return
@@ -180,27 +199,8 @@ class Menu:
                 self.state = MenuState.MAIN
                 self.input_active = False
             elif self.state == MenuState.NETWORK_SETTINGS:
-                if self.current_input_field == 0:
-                    self.server_ip = self.input_text
-                    self.current_input_field = 1
-                    self.input_text = str(self.server_port)
-                elif self.current_input_field == 1:
-                    try:
-                        self.server_port = int(self.input_text)
-                    except:
-                        pass
-                    self.current_input_field = 2
-                    self.input_text = self.player_ip
-                elif self.current_input_field == 2:
-                    self.player_ip = self.input_text
-                    self.current_input_field = 3
-                    self.input_text = str(self.player_port)
-                elif self.current_input_field == 3:
-                    try:
-                        self.player_port = int(self.input_text)
-                    except:
-                        pass
-                    self.confirm_network_settings()
+                self.save_network_field(self.current_input_field)
+                self.confirm_network_settings()
         elif event.unicode.isprintable():
             self.input_text += event.unicode
 
@@ -347,7 +347,8 @@ class Menu:
         self.screen.blit(label, (150, 180))
         pygame.draw.rect(self.screen, (100, 100, 100), (150, 200, 500, 40))
         pygame.draw.rect(self.screen, (255, 255, 255) if self.current_input_field == 0 else (100, 100, 100), (150, 200, 500, 40), 2)
-        text = self.font_small.render(self.server_ip if self.current_input_field != 0 else self.input_text, True, (255, 255, 255))
+        display_text = self.input_text if self.current_input_field == 0 else self.server_ip
+        text = self.font_small.render(display_text, True, (255, 255, 255))
         self.screen.blit(text, (160, 207))
         
         # Server Port
@@ -355,7 +356,8 @@ class Menu:
         self.screen.blit(label, (150, 260))
         pygame.draw.rect(self.screen, (100, 100, 100), (150, 280, 500, 40))
         pygame.draw.rect(self.screen, (255, 255, 255) if self.current_input_field == 1 else (100, 100, 100), (150, 280, 500, 40), 2)
-        text = self.font_small.render(str(self.server_port) if self.current_input_field != 1 else self.input_text, True, (255, 255, 255))
+        display_text = self.input_text if self.current_input_field == 1 else str(self.server_port)
+        text = self.font_small.render(display_text, True, (255, 255, 255))
         self.screen.blit(text, (160, 287))
         
         # Player IP
@@ -363,7 +365,8 @@ class Menu:
         self.screen.blit(label, (150, 340))
         pygame.draw.rect(self.screen, (100, 100, 100), (150, 360, 500, 40))
         pygame.draw.rect(self.screen, (255, 255, 255) if self.current_input_field == 2 else (100, 100, 100), (150, 360, 500, 40), 2)
-        text = self.font_small.render(self.player_ip if self.current_input_field != 2 else self.input_text, True, (255, 255, 255))
+        display_text = self.input_text if self.current_input_field == 2 else self.player_ip
+        text = self.font_small.render(display_text, True, (255, 255, 255))
         self.screen.blit(text, (160, 367))
         
         # Player Port
@@ -371,7 +374,8 @@ class Menu:
         self.screen.blit(label, (150, 420))
         pygame.draw.rect(self.screen, (100, 100, 100), (150, 440, 500, 40))
         pygame.draw.rect(self.screen, (255, 255, 255) if self.current_input_field == 3 else (100, 100, 100), (150, 440, 500, 40), 2)
-        text = self.font_small.render(str(self.player_port) if self.current_input_field != 3 else self.input_text, True, (255, 255, 255))
+        display_text = self.input_text if self.current_input_field == 3 else str(self.player_port)
+        text = self.font_small.render(display_text, True, (255, 255, 255))
         self.screen.blit(text, (160, 447))
         
         # Confirm button
