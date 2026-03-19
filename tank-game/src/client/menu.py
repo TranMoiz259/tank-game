@@ -226,13 +226,7 @@ class Menu:
             if response and response.get('status') == 'success':
                 self.room_code = response.get('room_code')
                 print(f"Room created with code: {self.room_code}")
-                
-                # Now join the room as the creator
-                self.network.send_join_request(self.room_code, self.player_name)
-                join_response = self.network.receive_message()
-                if join_response and join_response.get('status') == 'success':
-                    player_count = join_response.get('player_count', 1)
-                    print(f"You joined the room. Players: {player_count}")
+                # Server already adds player on create, so don't join again
         
         self.state = MenuState.WAITING
 
@@ -253,7 +247,13 @@ class Menu:
                 player_count = response.get('player_count', 1)
                 print(f"Joined room. Players: {player_count}")
             else:
-                print(f"Failed to join: {response.get('message')}")
+                error_msg = response.get('message', 'Failed to join')
+                print(f"Failed to join: {error_msg}")
+                if error_msg == 'Player name already taken':
+                    print("Please use a different player name!")
+                    self.state = MenuState.SETTINGS
+                    self.input_text = self.player_name
+                    self.input_active = True
                 return
         self.state = MenuState.WAITING
         print(f"Joined room: {self.room_code}")

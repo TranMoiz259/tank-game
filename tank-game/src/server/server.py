@@ -77,7 +77,12 @@ class Server:
                         room_code = message.get('room_code')
                         player_name = message.get('player_name')
                         if room_code in self.rooms:
-                            if self.rooms[room_code].add_player(player_name):
+                            # Check if player name already exists in room
+                            if player_name in self.rooms[room_code].players:
+                                response = {'status': 'error', 'message': 'Player name already taken'}
+                                client_socket.send(json.dumps(response).encode())
+                                print(f"Failed: Player name '{player_name}' already in room {room_code}")
+                            elif self.rooms[room_code].add_player(player_name):
                                 response = {
                                     'status': 'success',
                                     'message': 'Joined room',
@@ -91,13 +96,12 @@ class Server:
                         else:
                             response = {'status': 'error', 'message': 'Room not found'}
                             client_socket.send(json.dumps(response).encode())
-                            print(f"Failed: Room {room_code} not found")
                     
                     elif action == 'list_rooms':
                         rooms_list = list(self.rooms.keys())
                         response = {'status': 'success', 'rooms': rooms_list}
                         client_socket.send(json.dumps(response).encode())
-                        
+
                     elif action == 'start_game':
                         room_code = message.get('room_code')
                         if room_code in self.rooms:
