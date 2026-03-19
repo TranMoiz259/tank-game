@@ -1,0 +1,13 @@
+server_ip = "127.0.0.1"
+server_port = 5000
+max_players = 4
+room_code_length = 6
+game_title = "LAN Tank Battle"
+window_width = 800
+window_height = 600
+background_color = (0, 0, 0)  # RGB for black
+tank_color = (0, 255, 0)  # RGB for green
+bullet_color = (255, 0, 0)  # RGB for red
+player_speed = 5
+bullet_speed = 10
+game_tick_rate = 60  # frames per second

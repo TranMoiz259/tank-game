@@ -1,0 +1,12 @@
+SCREEN_WIDTH = 800
+SCREEN_HEIGHT = 600
+PLAYER_SPEED = 5
+BULLET_SPEED = 10
+ROOM_CODE_LENGTH = 6
+MAX_PLAYERS = 4
+FPS = 60
+
+# Game settings
+GAME_TITLE = "LAN Tank Battle"
+GAME_VERSION = "1.0"
+GAME_DESCRIPTION = "A multiplayer tank game that runs on LAN."
