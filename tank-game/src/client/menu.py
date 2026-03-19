@@ -446,9 +446,9 @@ class Menu:
             from src.client.game import Game
             self.game_instance = Game(self.room_code, players, self.player_name)
         
-        self.game_instance.draw(self.screen)
+        self.game_instance.draw()
         
-        # Exit button
+        # Exit button on top of game
         exit_btn = Button(self.width - 150, 10, 140, 40, "Exit")
         exit_btn.draw(self.screen, self.font_small)
 
